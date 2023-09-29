@@ -1,0 +1,51 @@
+version: '3'
+services:
+  java-srv:
+    build:
+      context: java-srv
+    depends_on:
+      - db-runner
+    links:
+      - "db:db"
+    volumes:
+      - ./log:/root/log
+
+  db:
+    image: cockroachdb/cockroach:v19.2.4
+    container_name: db
+    ports:
+     - "20000:26257"
+     - "8000:8080"
+    command: start --insecure
+
+  db_1:
+    image: cockroachdb/cockroach:v19.2.4
+    container_name: db_1
+    ports:
+     - "20001:26257"
+     - "8001:8080"
+    command: start --insecure --join=db
+
+  db_2:
+    image: cockroachdb/cockroach:v19.2.4
+    container_name: db_2
+    ports:
+     - "20002:26257"
+     - "8002:8080"
+    command: start --insecure --join=db
+
+  db-runner:
+    image: cockroachdb/cockroach:v19.2.4
+    command:
+      - shell
+      - /usr/local/bin/init-data.sh
+      - db:26257
+    volumes:
+     - ./db/init-data.sh:/usr/local/bin/init-data.sh:ro
+     - ./db/sql:/docker-entrypoint-initdb.d
+    depends_on:
+     - db
+     - db_1
+     - db_2
+    links:
+     - "db:db"
